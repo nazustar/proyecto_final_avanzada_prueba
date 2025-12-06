@@ -20,8 +20,12 @@ and the percentage of people with heart disease in an imaginary sample of 500 to
 import pandas as pd
 import seaborn as sns
 import numpy as np
+import os
 
-df = pd.read_csv('heart_data.csv')#Lee los datos del csv.
+direcc_base = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(direcc_base, '..', 'models', 'model.pkl')
+
+df = pd.read_csv('heart_data.csv')
 print(df.head())
 
 df = df.drop("Unnamed: 0", axis=1)
@@ -54,9 +58,9 @@ print(y_test, prediction_test)
 print("Mean sq. errror between y_test and predicted =", np.mean(prediction_test-y_test)**2)
 
 import pickle
-pickle.dump(model, open('model.pkl','wb'))
+pickle.dump(model, open(model_path, 'wb'))
 
-model = pickle.load(open('model.pkl','rb'))
+model = pickle.load(open(model_path, 'rb'))
 print(model.predict([[20.1, 56.3]]))
 
 
