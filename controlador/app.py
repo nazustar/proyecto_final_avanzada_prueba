@@ -10,7 +10,7 @@ people with heart disease in an imaginary sample of 500 towns.
 """
 
 import numpy as np
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
 import pickle
 import os
 
@@ -89,6 +89,39 @@ def predict():
     db.session.commit()
 
     return render_template('index.html', prediction_text='Percent with heart disease is {}'.format(output))
+
+#Predicción con JSON.
+@app.route('/api/predict', methods=['POST'])
+def api_predict():
+
+    #Obtiene el JSON.
+    data = request.get_json()
+
+    #Valida formatos.
+    if not data or "biking" not in data or "smoking" not in data:
+        return jsonify({
+            "error": "JSON inválido. Debe enviar: { 'biking': valor, 'smoking': valor }"
+        }), 400
+    try:
+        biking = float(data["biking"])
+        smoking = float(data["smoking"])
+    except ValueError:
+        return jsonify({"error": "Los valores deben ser numéricos."}), 400
+
+    features = np.array([[biking, smoking]])
+    prediction = model.predict(features)
+    result = round(prediction[0], 2)
+
+    pred = Prediccion(biking=biking, smoking=smoking, result=result)
+    db.session.add(pred)
+    db.session.commit()
+
+    return jsonify({
+        "biking": biking,
+        "smoking": smoking,
+        "prediccion": result,
+        "mensaje": "Predicción realizada con éxito"
+    }), 200
 
 
 #When the Python interpreter reads a source file, it first defines a few special variables. 
