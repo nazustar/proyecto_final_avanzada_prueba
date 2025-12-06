@@ -23,7 +23,8 @@ import numpy as np
 import os
 
 direcc_base = os.path.dirname(os.path.abspath(__file__))
-model_path = os.path.join(direcc_base, '..', 'models', 'model.pkl')
+model_dir = os.path.join(direcc_base, '..', 'models')
+model_path = os.path.join(model_dir, 'model.pkl')
 
 df = pd.read_csv('heart_data.csv')
 print(df.head())
@@ -58,7 +59,16 @@ print(y_test, prediction_test)
 print("Mean sq. errror between y_test and predicted =", np.mean(prediction_test-y_test)**2)
 
 import pickle
+
+try:
+    os.makedirs(model_dir, exist_ok=True)
+    print(f"Directorio creado o verificado: {model_dir}")
+except OSError as e:
+    print(f"Error al intentar crear el directorio: {e}")
+
 pickle.dump(model, open(model_path, 'wb'))
+
+
 
 model = pickle.load(open(model_path, 'rb'))
 print(model.predict([[20.1, 56.3]]))
