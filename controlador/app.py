@@ -10,14 +10,41 @@ people with heart disease in an imaginary sample of 500 towns.
 """
 
 import numpy as np
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
 import pickle
 import os
+
+
+#Creación de la base de datos.
+from flask_sqlalchemy import SQLAlchemy #Importar biblioteca.
 
 #identificacion de rutas para que sepa donde esta todo 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(base_dir, '..', 'modelo', 'model.pkl')
 app = Flask(__name__, template_folder='../vista')
+
+#Para que encuentre el directorio que es:
+db_path = os.path.abspath(os.path.join(base_dir, 'database.db'))
+
+# Configuración de base de datos
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+#Para poder usar db.
+db = SQLAlchemy(app)
+
+class Prediccion(db.Model): #Crea la tabla.
+
+    #Llave identificadora de la consulta.
+    id=db.Column(db.Integer, primary_key=True)
+
+    #Resutados de la consulta.
+    biking = db.Column(db.Float)
+    smoking = db.Column(db.Float)
+    result = db.Column(db.Float)
+
+    def __repr__(self):
+        return f'<Prediccion {self.id}>'
 
 try:
     model = pickle.load(open(model_path, 'rb'))
@@ -52,7 +79,49 @@ def predict():
 
     output = round(prediction[0], 2)
 
+    #Para ser guardado en la base al ejecutar.
+    pred = Prediccion(
+        biking = int_features[0],
+        smoking = int_features[1],
+        result = output
+    )
+    db.session.add(pred)
+    db.session.commit()
+
     return render_template('index.html', prediction_text='Percent with heart disease is {}'.format(output))
+
+#Predicción con JSON.
+@app.route('/api/predict', methods=['POST'])
+def api_predict():
+
+    #Obtiene el JSON.
+    data = request.get_json()
+
+    #Valida formatos.
+    if not data or "biking" not in data or "smoking" not in data:
+        return jsonify({
+            "error": "JSON inválido. Debe enviar: { 'biking': valor, 'smoking': valor }"
+        }), 400
+    try:
+        biking = float(data["biking"])
+        smoking = float(data["smoking"])
+    except ValueError:
+        return jsonify({"error": "Los valores deben ser numéricos."}), 400
+
+    features = np.array([[biking, smoking]])
+    prediction = model.predict(features)
+    result = round(prediction[0], 2)
+
+    pred = Prediccion(biking=biking, smoking=smoking, result=result)
+    db.session.add(pred)
+    db.session.commit()
+
+    return jsonify({
+        "biking": biking,
+        "smoking": smoking,
+        "prediccion": result,
+        "mensaje": "Predicción realizada con éxito"
+    }), 200
 
 
 #When the Python interpreter reads a source file, it first defines a few special variables. 
@@ -62,6 +131,3 @@ def predict():
 #So if we want to run our code right here, we can check if __name__ == __main__
 #if so, execute it here. 
 #If we import this file (module) to another file then __name__ == app (which is the name of this python file).
-
-if __name__ == "__main__":
-    app.run()
