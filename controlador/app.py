@@ -12,12 +12,18 @@ people with heart disease in an imaginary sample of 500 towns.
 import numpy as np
 from flask import Flask, request, render_template
 import pickle
+import os
 
-#Create an app object using the Flask class. 
-app = Flask(__name__)
+#identificacion de rutas para que sepa donde esta todo 
+base_dir = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(base_dir, '..', 'modelo', 'model.pkl')
+app = Flask(__name__, template_folder='../vista')
 
-#Load the trained model. (Pickle file)
-model = pickle.load(open('models/model.pkl', 'rb'))
+try:
+    model = pickle.load(open(model_path, 'rb'))
+except Exception as e:
+    print(f"error al cargar el modelo: {e}. asegurese de que model.pkl exista en la carpeta modelo/")
+    model = None
 
 #Define the route to be home. 
 #The decorator below links the relative route of the URL to the function it is decorating.
@@ -26,6 +32,8 @@ model = pickle.load(open('models/model.pkl', 'rb'))
 #Note that render_template means it looks for the file in the templates folder. 
 
 #use the route() decorator to tell Flask what URL should trigger our function.
+
+
 @app.route('/')
 def home():
     return render_template('index.html')
