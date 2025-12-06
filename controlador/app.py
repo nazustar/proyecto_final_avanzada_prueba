@@ -98,8 +98,3 @@ def predict():
 #So if we want to run our code right here, we can check if __name__ == __main__
 #if so, execute it here. 
 #If we import this file (module) to another file then __name__ == app (which is the name of this python file).
-
-#Crear la base.
-
-if __name__ == "__main__":
-    db.create_all()
