@@ -2,3 +2,4 @@
 ^__pycache^__/
 *.pyc
 model.pkl
+database.db 

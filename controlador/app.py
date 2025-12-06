@@ -14,10 +14,37 @@ from flask import Flask, request, render_template
 import pickle
 import os
 
+
+#Creación de la base de datos.
+from flask_sqlalchemy import SQLAlchemy #Importar biblioteca.
+
 #identificacion de rutas para que sepa donde esta todo 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(base_dir, '..', 'modelo', 'model.pkl')
 app = Flask(__name__, template_folder='../vista')
+
+#Para que encuentre el directorio que es:
+db_path = os.path.abspath(os.path.join(base_dir, 'database.db'))
+
+# Configuración de base de datos
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+#Para poder usar db.
+db = SQLAlchemy(app)
+
+class Prediccion(db.Model): #Crea la tabla.
+
+    #Llave identificadora de la consulta.
+    id=db.Column(db.Integer, primary_key=True)
+
+    #Resutados de la consulta.
+    biking = db.Column(db.Float)
+    smoking = db.Column(db.Float)
+    result = db.Column(db.Float)
+
+    def __repr__(self):
+        return f'<Prediccion {self.id}>'
 
 try:
     model = pickle.load(open(model_path, 'rb'))
@@ -52,6 +79,15 @@ def predict():
 
     output = round(prediction[0], 2)
 
+    #Para ser guardado en la base al ejecutar.
+    pred = Prediccion(
+        biking = int_features[0],
+        smoking = int_features[1],
+        result = output
+    )
+    db.session.add(pred)
+    db.session.commit()
+
     return render_template('index.html', prediction_text='Percent with heart disease is {}'.format(output))
 
 
@@ -63,5 +99,7 @@ def predict():
 #if so, execute it here. 
 #If we import this file (module) to another file then __name__ == app (which is the name of this python file).
 
+#Crear la base.
+
 if __name__ == "__main__":
-    app.run()
+    db.create_all()
