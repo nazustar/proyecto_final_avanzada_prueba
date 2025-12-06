@@ -100,29 +100,35 @@ def api_predict():
     #Valida formatos.
     if not data or "biking" not in data or "smoking" not in data:
         return jsonify({
-            "error": "JSON inválido. Debe enviar: { 'biking': valor, 'smoking': valor }"
-        }), 400
+            "error": "JSON incorrecto. Se deben enviar: { 'biking': valor, 'smoking': valor }"
+        }), 400 #El 400 es el código de error
+    #convierte a float los datos.
     try:
         biking = float(data["biking"])
         smoking = float(data["smoking"])
     except ValueError:
-        return jsonify({"error": "Los valores deben ser numéricos."}), 400
+        return jsonify({"error": "Los valores no son validos"}), 400
 
+    #Preparación de datos.
     features = np.array([[biking, smoking]])
+
+    #Obtener una prediccion.
     prediction = model.predict(features)
     result = round(prediction[0], 2)
 
+    #Se guarda la data JSON en la base de datos
+    #Parecido al HTML pero este lo hace con el JSON xd
     pred = Prediccion(biking=biking, smoking=smoking, result=result)
     db.session.add(pred)
     db.session.commit()
 
+    #Da la respuesta.
     return jsonify({
         "biking": biking,
         "smoking": smoking,
         "prediccion": result,
-        "mensaje": "Predicción realizada con éxito"
+        "mensaje": "Se ha realizado la prediccion"
     }), 200
-
 
 #When the Python interpreter reads a source file, it first defines a few special variables. 
 #For now, we care about the __name__ variable.
